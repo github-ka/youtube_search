@@ -11,41 +11,49 @@ if (!empty($_GET['keyword'])) {
   $client = new Google_Client();
   $client->setApplicationName("My Application");
   $client->setDeveloperKey(API_KEY);
-
-  $youtube = new Google_Service_YouTube($client);
-
-
-
-  $keyword = $key;
-  $params['q'] = $keyword;
-  $params['type'] = 'video';
-  $params['maxResults'] = 10;
-
-
-  $videos = [];
-
-  try {
-    $searchRes = $youtube->search->listSearch('snippet', $params);
-
-    // $ss = function ($sr) use (&$videos) {
-    //   return $videos[] = $sr;
-    // };
-    // array_map($ss, $searchRes['items']);
-
-    array_map(
-      function ($searchRes) use (&$videos) {
-        $videos[] = $searchRes;
-      },
-      $searchRes['items']
-    );
-  } catch (Google_Service_Exception $e) {
-    echo htmlspecialchars($e->getMessage());
-    exit;
-  } catch (Google_Exception $e) {
-    echo htmlspecialchars($e->getMessage());
-    exit;
+  
+  $result = serach_youtube($client, $key);
+  
+  $videos = '';
+  if($result['res']){
+    $videos = $result['body'];
+  }else{
+    $err = $result['body'];
   }
 }
+
+
+
+  function serach_youtube($client, $key) {
+    $youtube = new Google_Service_YouTube($client);
+
+    $keyword = $key;
+    $params['q'] = $keyword;
+    $params['type'] = 'video';
+    $params['maxResults'] = 10;
+    $videos = [];
+
+    try {
+      $searchRes = $youtube->search->listSearch('snippet', $params);
+      // $ss = function ($sr) use (&$videos) {
+      //   return $videos[] = $sr;
+      // };
+      // array_map($ss, $searchRes['items']);
+      array_map(
+        function ($searchRes) use (&$videos) {
+          $videos[] = $searchRes;
+        },$searchRes['items']
+      );
+      return ['res'=>true,'body'=>$videos];
+    
+    } catch (Google_Service_Exception $e) {
+      return ['res' => false,'body' => htmlspecialchars($e->getMessage())];
+    } catch (Google_Exception $e) {
+      return ['res' => false,'body' => htmlspecialchars($e->getMessage())];
+    }
+  }
+
+
 
 
 ?>
@@ -53,14 +61,14 @@ if (!empty($_GET['keyword'])) {
 <html lang="ja">
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>サーチ</title>
   <style type="text/css">
     .mg {
       margin: 20px 30px;
     }
   </style>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>サーチ</title>
 </head>
 
 <body>
@@ -85,6 +93,9 @@ if (!empty($_GET['keyword'])) {
       echo '</tr>';
     }
     echo '</table>';
+  }elseif(isset($err)){
+    echo 'エラー理由：';
+    echo $err;
   }
   ?>
 
